@@ -1,0 +1,65 @@
+---
+title: "Quiz2_inclass"
+author: "Clara Mugnai"
+date: "2/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+“All work presented is my own. I have not communicated with or worked with anyone else on this quiz.”
+Clara Mugnai
+
+
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(here)
+# here determines where to start pulling from when you knit
+df <- read_excel(here("data/slu_graduates_17_21.xlsx"))
+
+## fixes error in the data
+df <- df %>% mutate(across(everything(),
+                           .fns = ~replace(., . ==  "STATS" , "STAT")))
+
+df_long <- df %>% pivot_longer(3:8, names_to = "type", values_to = "discipline")
+
+df_major <- df_long %>% 
+  filter(type == "major1" | type == "major2" | type == "major3")
+```
+
+Question 1 (10 points). Make a lollipop chart of the counts of the top 10 most popular majors at SLU in the past five years, ordering the “lollies” from the most popular major to the 10th most popular major.
+
+```{r}
+df_top10 = df_major %>%  filter(!is.na(discipline)) %>%
+  group_by(discipline) %>%
+  summarise(nstudents = n()) %>%
+  arrange(desc(nstudents)) %>%
+  mutate(discipline = fct_reorder(discipline, nstudents)) %>% 
+  slice(1:10)
+
+
+ggplot(df_top10, aes(x = reorder(discipline,nstudents), y = nstudents)) +
+  geom_point() +
+  geom_segment(aes(x = reorder(discipline,nstudents), xend = reorder(discipline,nstudents), y=0, yend = nstudents)) + coord_flip() + labs(x = "Major", y = "Number of students in major")
+```
+
+
+Question 2 (10 points). Make the plot from Question 1 of the take-home quiz, but, instead of plotting the other majors of all of the STAT majors in the data set, plot the counts of the minors of all of the STAT majors.
+
+```{r}
+df_minor = df  %>%  filter(major1 == "STAT" | major2 == "STAT" | major3 == "STAT") %>% 
+  pivot_longer(c(3:8), values_to = "discipline", names_to = "type") %>% 
+  filter(type == "minor1" | type == "minor2" | type == "minor3") %>%
+  filter(discipline != "STAT" & !is.na(discipline)) %>%
+  group_by(discipline) %>%
+  summarise(nstudents = n()) %>%
+  arrange(desc(nstudents)) %>%
+  mutate(discipline = fct_reorder(discipline, nstudents))
+
+ggplot(data = df_minor, aes(x = nstudents,y = discipline)) + geom_col() + labs(x = "number of students in minor", y = "Minor, in addition to STAT major")
+```
+
