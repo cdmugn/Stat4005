@@ -1,0 +1,67 @@
+---
+title: "Exercises_3"
+author: "Clara Mugnai"
+date: "2/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# 8.1.1
+
+## Exercise 1: Geom_jitter would pull apart the stacked points along the bottom of the graph, making the actual proportion of success more acurate. That is not 23 points, so geom_jitter would make more points so you can see a stronger trend.
+
+
+# 8.1.2
+
+## Exercise 1:
+Pick 1 of the 3 examples (stand your ground, climate change, or covid cases), and summarize why that graphic is not ethical. Make sure to include the context that the graph was created in from Section 8.3 in your explanation.
+
+- In the stand your ground graphic, they flip the y-axis so that murders by firearm look like they greatly decrease when they actually greatly increase after the law is put into place. Given the context, that it was released with the intention to show that the "Stand Your Ground" law did not cause an increase in gun murders, and therefore, have an effect on what happened to Trayvon Martin. This is unethical. It is taking the public's opinion of a situation and attempting to use statistics and graphics to warp that opinion. 
+
+## Exercise 2:
+Choose 2 of the 12 principles of ethical practice of data science and come up a (possibly hypothetical) scenario where each of your two chosen principles would come into play.
+
+- "Recognize and mitigate bias in ourselves and in the data we use." and "Protect the privacy and security of individuals represented in our data."
+- If I was doing research on a disease that I believed to be a major threat to animals in Maine, and making a graphic of what I found, I could see these two coming into play. I would be tempted to potentially make the part I am trying to emphasize a brighter color, like red, so that it stands out more to the viewer. I could also be tempted to sample from a pool where I know the disease is more present, so that my point is better proven. 
+
+
+
+With any data visualization, we need to think critically about what data is actually being visualized as well as the context that the data came from. Consider the following exercise.
+
+## Exercise 3
+
+### Exercise 3.a.
+A link to an image showing the vaccine "worked":
+
+https://www.ft.com/content/d71729a3-72e8-490c-bd7e-757027f9b226
+
+### Exercise 3.b.
+A link to an image showing the vaccine "did not work":
+
+https://www.nature.com/articles/d41586-021-03686-x
+
+-There is a waning immunity graph in this article that makes it look like the vaccines are barely effective at all. 
+
+# 8.2
+
+## Exercise 1
+
+The second graphic is better for humanizing the victims because you can click on each dot separately and read the name and details of that event. 
+
+## Exercise 2
+
+In a static map, you could have a key with different colors for different events that caused lynching, and color the dots so that they were categorized and therefore humanized better. You could also list the names after the graphic, it would not enhance the graphic itself but it would at least name them all in some capacity. 
+
+## Exercise 3
+
+-One takeaway for me was the ethical visualization. I think it is a major point that when making graphics of this type of data we need to take into account what group we are portraying so that they are not portrayed with improper ethics. The graphic cannot mislead or other impact peoples' opinions of a specific group. Another takeaway for me was that we need to be cautious with how the colors and patterns chosen are interpreted in representation of the group being discussed. A final takeaway for me was that the two graphics we examine in this paper are not both ethically sound. Even fully published visualizations can struggle to achieve being "ethical".
+
+## Exercise 4
+
+-The chart uses emotion heavily because showing the graphic as the line changing color and then the rest of that persons potential lifespan being white draws attention to the fact that they had lifespan left that was taken away. It really draws the emotion out of the viewer, because you focus on the difference in the colored portion and the white portion, not just the number of people killed. 
+
+
+
+
