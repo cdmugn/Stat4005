@@ -1,0 +1,136 @@
+---
+title: "Section_2"
+author: "Clara Mugnai"
+date: "1/19/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+install.packages("tidyverse")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("palmerpenguins")
+library(palmerpenguins)
+library(tidyverse)
+penguins
+
+## single quantitative frequency plot
+ggplot(data = penguins, aes(x = bill_length_mm)) +
+  geom_freqpoly() 
+## single categorical barplot
+ggplot(data = penguins, aes(x = species)) +
+  geom_bar()
+## two quant scatterplot
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point() +
+  geom_smooth()
+## two cat heatmap
+ggplot(data = penguins, aes(x = species, y = island)) +
+  geom_bin_2d()
+
+##Review exercises
+#1
+ggplot(data = penguins, aes(x=species, y = bill_length_mm)) + geom_boxplot()
+
+#2
+ggplot(data = penguins, aes(x = bill_length_mm)) +
+  geom_freqpoly(color = "forestgreen") 
+ggplot(data = penguins, aes(x = bill_length_mm)) +
+  geom_freqpoly(aes(color = species)) 
+
+#3
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() +
+  geom_smooth()
+
+#4
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point(aes(color = species)) +
+  geom_smooth()
+
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point() +
+  geom_smooth(aes(color = species))
+
+
+
+##2.2.2
+
+ggplot(data = penguins, aes(x = bill_length_mm)) +
+  geom_histogram(colour = "black", fill = "white") +
+  facet_wrap(~ species, ncol = 1)
+
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~ species)
+
+#Faceting is better if you have a bunch of categories and a lot going on, or if there is a lot of overlap. Color is nicer to look at and easier to do comparisons if you have a "nice" plot to work with and relatively few categories.
+
+
+ggplot(data = penguins, aes(x = species)) +
+  geom_bar(stat = "count") ## don't need stat = "count" because it's the default.
+ggplot(data = penguins, aes(x = species, fill = sex)) +
+  geom_bar(position = "stack") + ## don't need "stacked" because it's default
+  scale_fill_viridis_d()
+ggplot(data = penguins, aes(x = species, fill = sex)) +
+  geom_bar(position = "dodge") + ## don't need "stacked" because it's default
+  scale_fill_viridis_d()
+ggplot(data = penguins, aes(x = species)) +
+  geom_bar() +
+  coord_polar()
+ggplot(data = penguins, aes(x = species)) + 
+  geom_bar() +
+  coord_flip()
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm,
+                            colour = species)) +
+  geom_point() +
+  geom_smooth()
+```
+
+
+2.3 
+```{r}
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm,
+                            colour = species)) +
+  geom_point() +
+  geom_smooth() + theme(
+  panel.background = element_rect(fill = "darkmagenta",
+                                colour = "yellow",
+                                size = 0.5),
+  panel.grid.major = element_line(size = 1.5, linetype = 'solid',
+                                colour = "darkmagenta"), 
+  panel.grid.minor = element_line(size = 2.0, linetype = 'solid',
+                                colour = "green"),
+plot.background = element_rect(fill = "green"))
+```
+-Theme commands, use theme(insert code you probably have to google and manipulate from there)
+
+2.2.3
+```{r}
+penguins_count <- penguins %>% group_by(species) %>% summarise(ncount =n())
+ggplot(data = penguins_count, aes(x = species, y = ncount)) +
+  geom_bar(stat = "identity", position = "dodge")
+ggplot(data = penguins, aes(x = species, fill = sex, y = )) +
+  geom_bar(position = "dodge", stat = "identity") 
+```
+
+code snippet
+```{r}
+library(tidyverse)
+category <- rep(c("Group 1", "Group 2", "Group 3", "Group 4", "Group 5"), 7)
+time <- rep(c(2000, 2001, 2002, 2003, 2004, 2005, 2006), each = 5) 
+response <- rpois(length(category), 30)
+df <- tibble(category, time, response)
+ggplot(data = df, aes(x = time, y = response)) +
+  geom_col(aes(fill = category)) +
+  labs(y = "count") +
+  scale_fill_viridis_d()
+#change to a line plot so that you can compare groups on level planes.
+
+ggplot(data = df, aes(x = time, y = response)) + geom_line(aes(color = category)) + scale_color_viridis_d()
+```
+
+

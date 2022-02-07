@@ -1,0 +1,282 @@
+---
+title: "05-Tidyverse-review"
+author: "Clara Mugnai"
+date: "1/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Aside: Baseline of Zero?
+
+```{r}
+library(tidyverse)
+library(palmerpenguins)
+ggplot(data = penguins, aes(x = bill_length_mm, y = bill_depth_mm)) + geom_point() + xlim(c(0,60)) + ylim(c(0,60))
+```
+
+Should include zero if you have bars, as people can't conceptualize what that means very well. On a line or dot plot you can have whatever baseline the preset is because people do better following what that actually means. 
+
+# Section 5.1 Billboard
+
+```{r}
+library(tidyverse)
+library(billboard)
+library(ggplot2)
+head(wiki_hot_100s)
+tail(wiki_hot_100s)
+```
+
+Exercise 1:
+```{r}
+df_2000s <- wiki_hot_100s %>% as_tibble() %>% filter(year >= 2000 & year <= 2009)
+
+df_2000s_sum <- df_2000s %>% group_by(artist) %>%
+  summarise(nsongs= n()) %>%
+  arrange(desc(nsongs)) %>%
+  slice(1:20) %>%
+  mutate(artist = fct_reorder(artist, nsongs))
+
+ggplot(df_2000s_sum, aes(x = artist, y = nsongs)) +
+  geom_col() + coord_flip() + labs(x = "Artist", y = "Number of songs in top 100")
+```
+
+Exercise 2:
+The artist for "See You Again" is Wiz Kalifa featuring Charlie Puth. This makes the song not in a Wiz Kalifa category for our plot. It should really work as one of his songs. 
+
+Exercise 3:
+```{r}
+library(stringr)
+wiki_hot_100s %>% mutate(artist = str_remove(artist, pattern = " featuring .*")) %>% tail()
+```
+
+
+Exercise 4:
+Lollipop chart!
+```{r}
+ggplot(df_2000s_sum, aes(x = artist, y = nsongs)) +
+  geom_point() +
+  geom_segment(aes(x=artist, xend=artist, y=0, yend=nsongs)) + coord_flip() + labs(x = "Artist", y = "Number of songs in top 100")
+```
+
+Exercise 5:
+```{r}
+ggplot(df_2000s_sum, aes(x = artist, y = nsongs)) +
+  geom_point(size=4, color = "blue", shape=8) +
+  geom_segment(color = "goldenrod1",(aes(x=artist, xend=artist, y=0, yend=nsongs))) + coord_flip() + labs(x = "Artist", y = "Number of songs in top 100")
+```
+
+
+
+```{r}
+library(rvest)
+library(tidyverse)
+library(httr)
+year <- 2017
+webpage <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
+content <- webpage %>% 
+  httr::GET(config = httr::config(ssl_verifypeer = FALSE)) %>% 
+  read_html()  
+tab <- content %>% html_nodes("table")
+df <- tab[[1]] %>% html_table() %>%
+  mutate(year = 2017)
+df
+
+get_wiki_100 <- function(year) {
+  
+  ## same code as before, replacing 2017 with year.
+  url <- paste0("https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_", year)
+content <- webpage %>% 
+  httr::GET(config = httr::config(ssl_verifypeer = FALSE)) %>% 
+  read_html()  
+tab <- content %>% html_nodes("table")
+ df <- tab[[1]] %>% html_table() %>%
+  mutate(year = year)
+df} 
+
+library(purrr)
+year_list <- list(2017, 2018, 2019, 2020, 2021)
+year_list
+
+df_all <- map(year_list, get_wiki_100)
+df_all
+
+df_2017_present <- bind_rows(df_all)
+
+df_2017_present <- df_2017_present %>%
+  mutate(Title = str_remove_all(Title, pattern = "\"")) %>% ## get rid of \ in title
+  rename(no = No., 
+         title = Title, 
+         artist = `Artist(s)`)
+
+wiki_tibble <- as_tibble(wiki_hot_100s) %>% ## convert billboard data to tibble
+  mutate(year = as.numeric(year),
+         no = as.integer(no))
+
+hot100_df <- bind_rows(wiki_tibble, df_2017_present)
+
+hot100_df = hot100_df %>% mutate(artist = str_remove(artist, pattern = " featuring .*"))
+
+```
+
+Exercise 6:
+
+```{r}
+df_2010s <-hot100_df %>% filter(year >= 2010 & year <= 2019)
+
+df_2010s_sum <- df_2010s %>% group_by(artist) %>%
+  summarise(nsongs= n()) %>%
+  arrange(desc(nsongs)) %>%
+  slice(1:20) %>%
+  mutate(artist = fct_reorder(artist, nsongs))
+
+ggplot(df_2010s_sum, aes(x = artist, y = nsongs)) +
+   geom_point(size=4, color = "blue", shape=8) +
+  geom_segment(color = "goldenrod1",(aes(x=artist, xend=artist, y=0, yend=nsongs))) + coord_flip() + labs(x = "Artist", y = "Number of songs in top 100")
+```
+
+Exercise 7:
+
+We are pulling data from a website and then putting it into an html format that R can understand. Then we put it into a table with all of the years labeled. Then with the purr package we remove quotes and capitals so that it all looks the same and can be sorted and trimmed. 
+
+## End of 5.1
+
+# Section 5.2 Happy Planet Index
+
+```{r}
+library(tidyverse)
+hpi_df <- read_csv("data/hpi-tidy.csv")
+hpi_df
+```
+
+making scatterplot
+```{r}
+ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing)) +
+  geom_point()
+```
+labeling points: 
+make a new data set with just the one we want to label 
+then put in ggplot that we want to label just that data set
+
+```{r}
+hpi_us <- hpi_df %>% filter(Country == "United States of America")
+hpi_us
+
+ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing)) +
+  geom_point() +
+  geom_label(data = hpi_us, aes(label = Country))
+```
+editing point 
+```{r}
+library(ggrepel)
+ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing)) +
+  geom_point() +
+  geom_label_repel(data = hpi_us, aes(label = Country)) +
+  geom_point(data = hpi_us, size = 3, shape = 1)
+```
+
+Exercise 1:
+
+labeling 3 different countries 
+
+```{r}
+hpi_ARB <- hpi_df %>% filter(Country == "Australia"|Country == "Russia"|Country == "Brazil")
+hpi_ARB
+
+ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing)) +
+  geom_point() +
+  geom_label_repel(data = hpi_ARB, aes(label = Country)) + 
+  geom_point(data = hpi_ARB, size = 3, shape = 1)
+```
+
+# 5.2.2. plotly to label points interactively
+
+```{r}
+library(plotly)
+plot1 <- ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing)) +
+  geom_point()
+ggplotly(plot1)
+```
+
+To get country names on the plot we add a label argument to the plot and then we say tooltip = label
+
+```{r}
+plot1 <- ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing,
+                                   label = Country)) +
+  geom_point()
+ggplotly(plot1, tooltip = "label")
+```
+
+This is the uniform way to use plotly() so we really like plotly.
+
+Exercise 2:
+
+```{r}
+plot2 <- ggplot(df_2010s_sum, aes(x = artist, y = nsongs, label = artist)) +
+   geom_point(size=4, color = "blue", shape=8) +
+  geom_segment(color = "goldenrod1",(aes(x=artist, xend=artist, y=0, yend=nsongs))) + coord_flip() + labs(x = "Artist", y = "Number of songs in top 100")
+ggplotly(plot2, tooltip = "label")
+```
+
+Exercise 3:
+
+Advantages: interesting, allows user to explore data.
+
+Disadvantages: requires computer, adds extra "stuff" that could not be useful, bad for making a a particular point about the graph (like showing just one country). 
+
+# 5.2.3. Themes and Color Changes
+
+```{r}
+ggplot(data = hpi_df, aes(x = Footprint, y = Wellbeing)) +
+  geom_point() +
+  geom_label_repel(data = hpi_us, aes(label = Country)) +
+  geom_point(data = hpi_us, size = 3, shape = 1) +
+  labs(title = "Countries with a Higher Ecological Footprint Tend to Have Citizens with Higher Wellbeing", ## add title
+    subtitle = "Wellbeing is on a 1-10 scale", ## add subtitle (smaller text size than the title)
+    caption = "Data Source: http://happyplanetindex.org/countries", ## add caption to the bottom of the figure
+    x = "Ecological Footprint", ## change x axis label
+    y = "Wellbeing") ## change y axis label
+```
+
+Exercise 4:
+
+```{r}
+ggplot(data = hpi_df, aes(x = Footprint, y = HappyLifeYears, colour = Region)) +
+  geom_point() +
+  scale_colour_brewer(palette = "Accent")
+```
+- We are using a qual scale here, so from the middle section of the page of scales. Unordered, random things.
+
+ - can change scales using scale_colour_brewer or scale_colour_viridis_d/b/c
+
+Exercise 5:
+
+```{r}
+ggplot(data = hpi_df, aes(x = Footprint, y = HappyLifeYears, colour = Region)) +
+  geom_point() +
+  scale_colour_brewer(palette = "Set1")
+```
+- I like my scale better, the yellow is a little hard to see but not too bad. Overall, it is more vivid colors and easier to see, in my opinion. 
+
+
+```{r}
+ggplot(data = hpi_df, aes(x = Footprint, y = HappyLifeYears, colour = Region)) +
+  geom_point() +
+  scale_colour_viridis_d(option = "plasma")
+```
+
+Exercise 6:
+scale_color_viridis_d is for discrete data, like points or bars
+scale_color_viridis_c is for continuous data like a geom_tile plot
+scale_color_viridis_b is for binning continuous data before mapping is done
+
+
+Faceting is more useful if:
+
+* There are "more" categories and 
+* If there is a lot of overlap in the different groups
+
+
+
