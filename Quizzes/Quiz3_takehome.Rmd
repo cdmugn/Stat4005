@@ -1,0 +1,45 @@
+---
+title: "Quiz3_takehome"
+author: "Clara Mugnai"
+date: "2/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### “All work presented is my own, and I have followed all rules for collaboration.”
+
+Clara Mugnai
+
+### Question 1 (5 points). 
+
+Consider the Challenger example in our course notes. Clearly, the graphic used to communicate the results is poorly made: it eliminates data points when it really should not. However, the engineers making the graph did not have “malicious intent:” they did not purposefully remove these data points to try to lie: it was a mistake. Is the visualization still unethical? Use principles from the Modern Data Science Readings to explain in a few sentences.
+
+- It think it is still unethical to present the graph the way it was made, with missing points. In the ninth principle of the Modern Data Science readings they say; "consider carefully the ethical implications of choices we make when using data, and the impacts of our work on individuals and society". I think this person, intentional or not, did not carefully consider the implications of making the graph in that way. Additionally, they say; "help others to understand the most useful and appropriate applications of data to solve real-world problems." This was being made for scientists to look at prior to a shuttle launch. In order to help others understand the most use application of data, they need to be presented with all of the data and this person chose not to do that. 
+
+
+### Question 2 (4 points). 
+
+Find a graphic online, other than any given in our course readings, that is unethical. Provide a link to your graphic and give a 2-3 sentence description explaining why that graphic is not ethical.
+
+- https://theglobepost.com/2018/07/25/physician-assisted-suicide-america/
+
+- The graphic I am referencing here is on the bottom of the article, a pew research center survey of opinions on people's legal right to die. The biggest problem with it is that there are a lot of different bars, showing different things for each group of people surveyed, but there is not a scale on the bottom that is equivalent for each bar. An example is that the 34 and the 26 bar in the bottom row appear to be the same length, when they should not. Additionally, the two 46 bars in the first column appear the same length as the 42 bar in the second column.  
+
+### Question 3 (3 points). 
+
+Explain, in your own words, what each of the following Git terms mean:
+
+#### commit: 
+- commiting is saving your own version of something, with all of the most recent edits to some theoretical place in your computers brain. It is updating the version your computer knows and has. 
+
+#### push: 
+- pushing is shoving all of those recent updates, with record of when they were saved and why (commit messages), to the github website for the world to see.
+
+#### pull: 
+- pulling is taking something off of the github world and saving it onto your computers brain for you to edit as you wish. 
+
+
+### Question 4 (3 points). These three points are given if you successfully committed with a commit message and pushed your .Rmd and .html files to your GitHub account.
