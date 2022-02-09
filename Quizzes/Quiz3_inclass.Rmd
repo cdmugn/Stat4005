@@ -1,0 +1,48 @@
+---
+title: "Quiz3_inclass"
+author: "Clara Mugnai"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Quiz 3 In-Class
+Complete this quiz in a .Rmd file. To turn in the quiz, push both a .Rmd file and a knitted .html file to your GitHub site.
+
+Statement of Integrity: Copy and paste the following statement and then sign your name (by typing it) on the line below.
+
+### “All work presented is my own. I have not communicated with or worked with anyone else on this quiz.”
+
+Clara Mugnai
+
+Collaboration Reminder: You may not communicate with or work with anyone else on this quiz, but you may use any of our course materials or materials on the Internet.
+
+
+
+Question 1 (5 points). Suppose you do the following:
+
+You go to your GitHub site and make a change to the README file (adding a sentence, for example).
+In R Studio, you update one of your .Rmd files, adding a line of code and commit the file.
+You attempt to push the new file to your GitHub site.
+Once you get to the third step, you’ll get an error when you try to push. Why? What do you need to do first before you make the push in Step 3?
+
+- You need to commit the change to the README file so that R can push to it the way it is now, rather than the way it was prior. That way when you push you are pushing all of that newly committed information to GitHub.
+
+Question 2 (6 points). Give 2 advantages of using Git and GitHub. These must be advantages that we discussed in class (so you should not simply google “advantages of Git” and give the first two things that pop up).
+
+- You have all of your files and materials, of all different types, (.rmd, .html, word doc, etc.) saved in a place beyond your laptop in case something happens. Everything is in another place adn be accessed from somewhere else. 
+- You also have an easy way of sharing materials with other people on GitHub, they can pull and edit and view files and re-push and not replace your version that you have. It avoids the common errors of someone or two people editing at once and overlapping each other or missing wht the other person did. 
+
+Question 3 (6 points). Choose 1 of the 12 principles of the ethical practice of data science that you think is the most difficult to execute. Give a short, possibly hypothetical, example that illustrates how that principle could be difficult to follow.
+
+ - "Consider carefully the ethical implications of choices we make when using data, and the impacts of our work on individuals and society."
+ 
+ -If you were making a graphic of poverty around the globe and you presented a graphic that showed the most impoverished countries and then you made another graphic of the most in impoverished people by race, those two things could come together to have poor implications of individuals of that race or from those countries. You would have to consider if someone saw those two graphics in a row, where their brain would jump to assumption wise. You have to put yourself in other people's shoes in order to uphold this principle, and that can be very difficult to do.
+
+Question 4 (6 points). The authors of Data Feminism argued that data scientists should “embrace emotion,” not ignore it when building visuals. State the example that the authors used to show how emotion can be used to make a visual stronger. Then, give an argument against “embracing emotion.” In other words, give an argument that data visualizations should be devoid of emotion as much as possible, even if that’s not what you believe.
+
+- They used the visual of the shooting deaths and showed lines that changed color when the person was shot and then completed the arc that would have been that person's lifetime. Using the emotion that pulls from people, seeing what a person's life would have been and then where it ended rather than simply where it ended makes it a much more compelling image. The problem here is that the stats are still just stats. Yes, a visual is stronger if you pull on emotions but our job as data scientists making visualizations is not to change people's feelings and pull their emotions but to present numbers in an un-biased way and let people reach their own conclusions. 
+
+Question 5 (2 points). These two points are given for committing your .Rmd and .html files with a commit message correctly, and pushing them to your GitHub site.
