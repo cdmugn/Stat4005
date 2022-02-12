@@ -1,0 +1,35 @@
+---
+title: "mapping_6.6_exercises"
+author: "Clara Mugnai"
+date: "2/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+hpi_df <- read_csv("data/hpi-tidy.csv")
+```
+
+## Exercise 1: Make a map of a variable of your choosing. In coord_map(), use projection = "mercator", which is also the default (we will see in a later exercise that this probably is not the best choice).
+
+### Hint: in ggplot2’s map_data() function, there is a built in map of the "world".
+
+### Hint: You can read more about projections in Section 17.3.2 of Modern Data Science with R
+
+```{r}
+world_map <- ggplot2::map_data("world")
+world_map <- world_map %>%
+   rename(Country = region)
+world_hpi <- full_join(world_map, hpi_df) 
+ggplot(data = world_hpi, aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "black", aes(fill = LifeExpectancy)) +
+  coord_map(projection = "mercator") +
+  theme_void() +
+  scale_fill_viridis_c()
+```
+
+
