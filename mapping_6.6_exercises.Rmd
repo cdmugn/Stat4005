@@ -24,12 +24,54 @@ hpi_df <- read_csv("data/hpi-tidy.csv")
 world_map <- ggplot2::map_data("world")
 world_map <- world_map %>%
    rename(Country = region)
+world_hpi <- left_join(world_map, hpi_df) 
+ggplot(data = world_hpi, aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "black", aes(fill = LifeExpectancy)) +
+  coord_map(projection = "mercator") +
+  theme_void() +
+  scale_fill_viridis_b()
+```
+
+## Exercise 2:  You may notice that the United States does not get coloured in your map. Examine this issue further and fix the map so that the United States is coloured.
+
+- Looking at it further, the United States is not colored because the data sets are joined by the column country and the United states is "United States of America" on one data set and the "USA" in the other. Therefore, it returns NA values in the full data set.
+```{r}
+hpi_df <- hpi_df %>% mutate(Country = case_when(Country == "United States of America" ~ "USA", Country != "United States of America" ~ Country))
 world_hpi <- full_join(world_map, hpi_df) 
 ggplot(data = world_hpi, aes(x = long, y = lat, group = group)) +
   geom_polygon(colour = "black", aes(fill = LifeExpectancy)) +
   coord_map(projection = "mercator") +
   theme_void() +
-  scale_fill_viridis_c()
+  scale_fill_viridis_b()
 ```
 
+## Exercise 3: You may have noticed that there are two horizontal stripes across your map. This is an issue that drove me nuts! Check out this submitted issue on ggplot2’s GitHub page for the reason for the error as well as a fix. Use it to fix your plot.
 
+```{r}
+ggplot(data = world_hpi, aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "black", aes(fill = LifeExpectancy)) +
+  coord_map(projection = "mercator", xlim=c(-180,180)) +
+  theme_void() +
+  scale_fill_viridis_b()
+```
+
+## Exercise 4: This source says that Greenland is about 550% too big in the projection, as it should fit into Africa about 14 times in its actual size. That is the biggect issue with the Mercator projection.
+
+## Exercise 5: Examine all of the different options for map projection with ?mapproject. Then, change the projection to "globular". Change the projection again to "gilbert". How does the relative size of Greenland to Africa change in the projections?
+
+```{r}
+ggplot(data = world_hpi, aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "black", aes(fill = LifeExpectancy)) +
+  coord_map(projection = "globular", xlim=c(-180,180)) +
+  theme_void() +
+  scale_fill_viridis_b()
+ggplot(data = world_hpi, aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "black", aes(fill = LifeExpectancy)) +
+  coord_map(projection = "gilbert", xlim=c(-180,180)) +
+  theme_void() +
+  scale_fill_viridis_b()
+```
+
+-globular fixes the relative sizes but it also distorts the edges, making it hard to see the variable I am trying to show with the colors. 
+
+-Gilbert improves the relative sizes but I think Greenland is probably still too big here, so it did not fix it all the way. 
