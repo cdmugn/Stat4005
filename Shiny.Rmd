@@ -1,0 +1,17 @@
+---
+title: "shiny"
+author: "Clara Mugnai"
+date: "2/18/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exercises 9.1:
+1: The user has slide bars where they can change the intercept, the slope, the number of points, and the standard deviation.
+
+2: The outputs of the app are tables and graphs of different types for each of the variables. The tables and the graphs change depending on which other options you select.
+
+3: I choose the pancreatic cancer genome app, which showed genome sequences for each person that was tested and you could zoom in on specific ones to see all the actual mutations. The user can change which donor they are looking at, which changes the genes in the interactive genome. The user can also change the resize value which is how zoomed in the genome sections get. Finally, the output that pops up is a bunch of information on each specific mutation when you zoom over it, like with plotly. I think it is really interesting that you can zoom on a section to get popup information but when you zoom on a seperate section the original one goes back to regular size and no longer has a pop up option. It is very cool to use the interactive tool for something you could never do in a book.
