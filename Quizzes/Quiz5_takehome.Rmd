@@ -1,0 +1,73 @@
+---
+title: "Quiz5_takehome"
+author: "Clara Mugnai"
+date: "2/21/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+“All work presented is my own, and I have followed all rules for collaboration.”
+ Clara Mugnai
+
+Use the STAT 113 survey data set to explore the trend in the popularity of Facebook over time. Do this in 2 ways:
+
+(7 points). Construct a graph that uses the number of Facebook friends each student has.
+```{r}
+library(tidyverse)
+library(ggplot2)
+statsurvey_df <- read_csv("data/stat113_survey.csv")
+
+statsurvey_facebook<- statsurvey_df %>% 
+  filter(!is.na(Facebook)) %>%
+  group_by(time_both) %>%
+  summarise(meanfriends = mean(Facebook), sdfriends = sd(Facebook), nfriends = n()) %>%
+    mutate(l_se = meanfriends - sdfriends / sqrt(nfriends),
+           u_se = meanfriends + sdfriends / sqrt(nfriends))
+statsurvey_facebook <- statsurvey_facebook %>% separate(time_both, into = c("semester", "year"), sep = 1) %>% arrange(year, desc(semester)) %>% unite(col = "time_both", c(semester, year)) %>% mutate(time_both = fct_inorder(time_both))
+
+ggplot(data = statsurvey_facebook, aes(x = time_both, y = meanfriends)) +
+  geom_errorbar(aes(ymin=l_se, ymax=u_se), width=.2,
+                 position=position_dodge(.9), color = "blue") +
+  geom_point(color = "forestgreen") +
+  labs( x = "Semester", y = "Mean number of Facebook friends")
+```
+
+
+(7 points). Construct a graph that uses the proportion of students that have Facebook (assuming that 0 friends means that the student does not have a Facebook account and more than 0 friends means that the student does have a Facebook account).
+```{r}
+
+stat_facebookprop <- statsurvey_df %>% 
+  filter(!is.na(Facebook)) %>%
+  mutate(Account = if_else(Facebook == 0, true = "No", false = "Yes")) %>%
+  group_by(time_both, Account) %>%
+  summarise(ncount = n()) %>%
+  ungroup() %>%
+  group_by(time_both) %>%
+  mutate(ntotal = sum(ncount)) %>%
+  ungroup() %>%
+  filter(Account == "Yes") %>%
+  mutate(prop = ncount / ntotal, se = sqrt(prop*(1-prop)/ntotal), l_se = prop - se, u_se = prop + se) %>%
+  separate(time_both, into = c("semester", "year"), sep = 1) %>% 
+  arrange(year, desc(semester)) %>% 
+  unite(col = "time_both", c(semester, year)) %>% 
+  mutate(time_both = fct_inorder(time_both))
+
+ggplot(data = stat_facebookprop, aes(x = time_both, y = prop)) +
+ geom_errorbar(aes(ymin=l_se-se, ymax=u_se+se), width=.2,
+                 position=position_dodge(.9), color = "forestgreen") + 
+  geom_point(color = "blue") +
+  labs( x = "Semester", y = "Proportion of Students w/ Facebook account")
+```
+
+
+
+
+
+
+
+
+
+1 point is provided for committing and pushing to GitHub correctly.
