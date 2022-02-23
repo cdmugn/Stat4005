@@ -1,0 +1,69 @@
+---
+title: "Quiz5_inclass"
+author: "Clara Mugnai"
+date: "2/23/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+“All work presented is my own. I have not communicated with or worked with anyone else on this quiz.”
+
+Clara Mugnai
+
+Collaboration Reminder: You may not communicate with or work with anyone else on this quiz, but you may use any of our course materials or materials on the Internet.
+
+
+
+Question 1 (7 points). Consider the following two bar plots using the palmerpenguins data set. The first is a plot of the penguin species while the second is a plot of the average bill length for each species.
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+ggplot(data = penguins, aes(x = species)) +
+  geom_bar() +
+  labs(y = "Count")
+
+
+ggplot(data = penguins %>% group_by(species) %>%
+         summarise(avg_length = mean(bill_length_mm, na.rm = TRUE)),
+       aes(x = species, y = avg_length)) +
+  geom_col() +
+  labs(y = "Average Bill Length")
+```
+
+Which of the two graphs is appropriate to construct? Give a one sentence reason.
+
+- The first plot is appropriate, with the counts, because we have established you should not create a plot with no way to show variation for a summary statistic like a mean. 
+
+
+Question 2 (9 points). Use the Happy Planet Index data set to construct a graph that does not properly show variability in the underlying data. Recall that some variables in this data set are LifeExpectancy, Wellbeing, Footprint, and Region of the world.
+
+```{r}
+library(here)
+hpi_df <- read_csv(here("data/hpi-tidy.csv"))
+ggplot(data = hpi_df %>% group_by(Region) %>%
+         summarise(avg_footprint = mean(Footprint, na.rm = TRUE)),
+       aes(x = Region, y = avg_footprint)) +
+  geom_col() +
+  labs(y = "Average footprint")
+
+```
+
+Question 3 (7 points). Fix your graph from the previous question so that it does properly show variability in the underlying data.
+```{r}
+hpi_variability <- hpi_df %>% group_by(Region) %>%
+         summarise(avg_footprint = mean(Footprint, na.rm = TRUE), sdfootprint = sd(Footprint), ncountries = n()) %>%
+    mutate(l_se = avg_footprint - sdfootprint / sqrt(ncountries),
+           u_se = avg_footprint + sdfootprint / sqrt(ncountries))
+
+ggplot(data = hpi_variability, aes(x = Region, y = avg_footprint)) +
+  geom_errorbar(aes(ymin=l_se, ymax=u_se), width=.2,
+                 position=position_dodge(.9), color = "blue") + geom_point(color = "goldenrod") + 
+  labs(y = "Average footprint")
+```
+
+
+The remaining 2 points are given for committing and pushing your .Rmd and .html files correctly to GitHub.
+
