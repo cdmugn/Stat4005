@@ -56,8 +56,12 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+```
 
 
+9.4
+
+```{r}
 atp_df <- read_csv("data/atp_matches_2019.csv")
 wta_df <- read_csv("data/wta_matches_2019.csv")
 both_df <- bind_rows(atp_df, wta_df)
@@ -91,5 +95,151 @@ l_small <- major_tennis_l %>% select(value, loser_seed, l_ace, l_df, l_svperc, l
 df <- bind_rows(w_small, l_small) %>%
   rename(player = "value")
 df
+```
+
+
+```{r}
+df_oneplayer <- df %>% filter(player == "Jeremy Chardy")
+ggplot(data = df_oneplayer, aes_string(x = "ace")) + geom_histogram()
+
+
+var_choices <- names(df)[3:7]
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    ggplot(df_sub(), aes(x = .data[[input$varchoice]])) +
+      geom_histogram(colour = "black", fill = "white", bins = input$binnumber) +
+      theme_grey(base_size = 22)
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+  
+
+}
+
+shinyApp(ui, server)
+```
+
+do all of your data prepping in R and only put the plots and the inputs into the actual shiny commands
+
+
+Advantages of static:
+
+- Easier to present or to send to someone (you control what they see so it is the same everytime)
+- More user friendly, so more able to control what user is seeing and doing 
+- Useful when trying to show one particular thing, like one player or one major, etc. 
+
+## Exercises 9.6
+
+```{r}
+# change input in tennis app from slider to numeric
+
+
+var_choices <- names(df)[3:7]
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    numericInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    ggplot(df_sub(), aes(x = .data[[input$varchoice]])) +
+      geom_histogram(colour = "black", fill = "white", bins = input$binnumber) +
+      theme_grey(base_size = 22)
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+  
+
+}
+
+shinyApp(ui, server)
+
+#change it back and apply exercise 3 in 2.2.8 of mastering shiny to the slider 
+
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Range of Bins", 
+                value = c(0, 5), min = 0, max = 100)),
+    actionButton("click", label = "Play"),
+    mainPanel(plotOutput("histgraph"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    ggplot(df_sub(), aes(x = .data[[input$varchoice]])) +
+      geom_histogram(colour = "black", fill = "white", bins = input$binnumber) +
+      theme_grey(base_size = 22)
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+
+}
+shinyApp(ui, server)
+
+# Could not get the plot to be reactive and scroll through. I added an action button and then got stuck.
+
 ```
 
