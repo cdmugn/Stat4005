@@ -1,0 +1,62 @@
+---
+title: "Quiz6_takehome"
+author: "Clara Mugnai"
+date: "2/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Complete this Quiz in a .Rmd file. Submit a .Rmd and a knitted .html file to GitHub by the due date and time.
+
+“All work presented is my own, and I have followed all rules for collaboration.”
+
+Clara Mugnai
+
+
+Construct a Shiny app for any data set that we have worked with so far (besides SLU Majors and Tennis) or for any data set you used in STAT/DATA 234. Thirteen points will be given for Shiny apps that:
+
+run,
+have at least 2 different inputs,
+have at least 1 plot output that looks presentable (e.g. appropriate labels, colour scale, and makes sense to construct).
+Then, write a 2 sentence description about the purpose of your app (2 points).
+
+```{r}
+library(tidyverse)
+pokemon_df <- read_csv("data/pokemon_full.csv")
+library(shiny)
+
+# making a shiny site that shows a scatterplot of pokemon weight/height/base experience vs. HP for a specific type. The user picks type and the y for the scatterplot
+
+df_onetype <- pokemon_df %>% filter(Type == "Fire")
+ggplot(data = df_onetype, aes_string(x = "height")) + geom_histogram(bins = 12)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("typechoice",
+                   label = "Choose a Type of Pokemon", choices = levels(factor(pokemon_df$Type)),
+                   selected = "Fire"),
+    radioButtons("statchoice", label = "Choose a Statistic",
+                 choices = names(pokemon_df)[c(12,13,14)])),
+    mainPanel(plotOutput("histplot"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  pokemon_small <- reactive({
+    pokemon_df %>% filter(Type == input$typechoice)
+  })
+   
+  output$histplot <- renderPlot({
+ggplot(data = pokemon_small(), aes(x = .data[[input$statchoice]])) + geom_histogram(bins = 12, fill = "forestgreen", color = "purple")
+  })
+
+}
+
+shinyApp(ui, server)
+```
+
+The purpose of this app is to give users a visual of the different distributions of height, weight, and base experience across different types of Pokemon. They get to choose a type and then a stat and see that, for example, electric pokemon are much lighter than rock pokemon. 
+
