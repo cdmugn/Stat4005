@@ -1,0 +1,136 @@
+---
+title: "Quiz6_inclass"
+author: "Clara Mugnai"
+date: "3/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Complete this quiz in a .Rmd file. To turn in the quiz, push both a .Rmd file and a knitted .html file to your GitHub site.
+
+Statement of Integrity: Copy and paste the following statement and then sign your name (by typing it) on the line below.
+
+“All work presented is my own. I have not communicated with or worked with anyone else on this quiz.”
+Clara Mugnai
+
+Collaboration Reminder: You may not communicate with or work with anyone else on this quiz, but you may use any of our course materials or materials on the Internet.
+
+
+
+Question 1 (6 points). Using the SLU Majors data set, give an example of a situation where you would construct a static graph instead of an interactive graph. Why would the static graph be better?
+
+If you were trying to compare something like the female ratio across all of the majors, if would benefit you to have a static graph so that every major is visible at one time and the user can just look at the entire thing and not have to change anything. 
+
+Question 2 (17 points). Consider this version of the Tennis App from class:
+
+```{r}
+library(shiny); library(tidyverse)
+atp_df <- read_csv("data/atp_matches_2019.csv")
+wta_df <- read_csv("data/wta_matches_2019.csv")
+both_df <- bind_rows(atp_df, wta_df)
+
+both_long <- both_df %>% pivot_longer(c(winner_name, loser_name))
+
+## only keep players who have player over 50 matches
+both_n50 <- both_long %>% group_by(value) %>% count() %>%
+  filter(n > 50)
+
+## construct various statistics
+major_tennis <- semi_join(both_long, both_n50, by = c("value"))
+major_tennis <- major_tennis %>% mutate(w_svperc = 100 * w_1stIn / w_svpt,
+                        l_svperc = 100 * l_1stIn / l_svpt,
+                        w_firstwon = 100 * w_1stWon / w_1stIn,
+                        l_firstwon = 100 * l_1stWon / l_1stIn,
+                        w_secondwon = 100 * w_2ndWon / (w_svpt - w_1stIn),
+                        l_secondwon = 100 * l_2ndWon / (l_svpt - l_1stIn))
+
+major_tennis_w <- major_tennis %>% filter(name == "winner_name")
+major_tennis_l <- major_tennis %>% filter(name == "loser_name")
+
+w_small <- major_tennis_w %>% select(value, winner_seed, w_ace, w_df, w_svperc,
+                                     w_firstwon, w_secondwon) %>%
+  rename(seed = winner_seed, ace = w_ace, df = w_df, svperc = w_svperc,
+         firstwon = w_firstwon, secondwon = w_secondwon)
+
+l_small <- major_tennis_l %>% select(value, loser_seed, l_ace, l_df, l_svperc, l_firstwon, l_secondwon)  %>%
+  rename(seed = loser_seed, ace = l_ace, df = l_df, svperc = l_svperc,
+         firstwon = l_firstwon, secondwon = l_secondwon)
+
+df <- bind_rows(w_small, l_small) %>%
+  rename(player = "value")
+df
+```
+
+```{r}
+var_choices <- names(df)[3:7]
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    selectizeInput("playerchoice2",
+                   label = "Choose a Different Player", choices = levels(factor(df$player)),
+                   selected = "Petra Martic"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+     radioButtons("varchoice2", label = "Choose a Statistic",
+                 choices = var_choices)),
+    mainPanel(plotOutput("histgraph"),
+              plotOutput("boxplot"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+    df_sub2 <- reactive({
+      df %>% filter(player == input$playerchoice | player == input$playerchoice2)
+    })
+  
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    ggplot(df_sub(), aes(x = .data[[input$varchoice]])) +
+      geom_histogram(colour = "black", fill = "white", bins = 15)
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+   output$boxplot <- renderPlot({
+ggplot(data = df_sub2(), aes(x = player, y = .data[[input$varchoice2]])) + geom_boxplot(bins = 15, fill = "white", color = "black")
+  })
+
+}
+
+shinyApp(ui, server)
+
+```
+Add a plot below the histogram that is a side-by-side boxplot for comparing a serving statistic of two players. The user should be able to select the two players as well as the statistic being compared.
+
+Hint: You’ll need to create both a new input (for the second player) and a new output (for the second graph).
+
+Hint 2: The histogram may now have data from both players. There is no need to fix this so that it only shows one player’s stats.
+
+Two points are given for committing and pushing to GitHub.
+
+
+
+Extra Credit (2 points). Add an input to your app that gives the user a choice for whether or not to display the means on the side-by-side boxplot (you must also modify the server so that the boxplots actually update if the user selects the means to be displayed). Below is code that plots the means on a static side-by-side boxplot.
+```{r}
+library(tidyverse)
+toy_df <- tibble(response = rnorm(100, 0, 1),
+                 group = sample(c("A", "B"), size = 100, replace = TRUE))
+ggplot(toy_df, aes(x = group, y = response)) +
+  geom_boxplot() +
+  stat_summary(fun = mean, geom = "point", colour = "purple", shape = 8,
+               size = 3)
+```
