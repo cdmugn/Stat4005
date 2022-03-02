@@ -14,6 +14,8 @@ Complete this Quiz in a .Rmd file. Submit a .Rmd and a knitted .html file to Git
 
 Clara Mugnai
 
+Collaboration Reminder: You may work with other students who are in our class on the take-home quiz, but you must list who you worked with at the top of your quiz. Write the name of any student(s) that you collaborated with in the space below this (ignore this if you did not collaborate with any students).
+- worked with Grace Wysocki
 
 Construct a Shiny app for any data set that we have worked with so far (besides SLU Majors and Tennis) or for any data set you used in STAT/DATA 234. Thirteen points will be given for Shiny apps that:
 
@@ -27,7 +29,7 @@ library(tidyverse)
 pokemon_df <- read_csv("data/pokemon_full.csv")
 library(shiny)
 
-# making a shiny site that shows a scatterplot of pokemon weight/height/base experience vs. HP for a specific type. The user picks type and the y for the scatterplot
+# making a shiny site that shows a histogram of pokemon weight/height/base experience for a specific type. The user picks type and the variable on the histogram.
 
 df_onetype <- pokemon_df %>% filter(Type == "Fire")
 ggplot(data = df_onetype, aes_string(x = "height")) + geom_histogram(bins = 12)
