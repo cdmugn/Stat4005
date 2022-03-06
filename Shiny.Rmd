@@ -27,28 +27,40 @@ df <- df %>% mutate(across(everything(),
 
 df_long <- df %>% pivot_longer(3:8, names_to = "type", values_to = "discipline")
 df_major <- df_long %>% 
-  filter(type == "major1" | type == "major2" | type == "major3")
+  filter(type == "major1" | type == "major2" | type == "major3") %>% filter(!is.na(discipline))
+
+df_minor <- df_long %>%
+  filter(type == "minor1" | type == "minor2" | type == "minor3")  %>% filter(!is.na(discipline))
 
 df_stat <- df_major %>% filter(discipline == "STAT") 
-df_statfull <- semi_join(df_long, df_stat, by = "adm_id") %>%
-  filter(type == "major1" |
-           type == "major2" | 
-           type == "major3")
+
+df_full <- full_join(df_major, df_minor, by = "adm_id") %>% group_by(discipline.x,discipline.y) %>%
+  summarise(nstudent = n()) %>% unite(discipline, c(discipline.x, discipline.y)) %>% mutate(discipline = fct_reorder(discipline, nstudent))
 
 df_nostat <- df_statfull %>% filter(discipline != "STAT" &
                               !is.na(discipline)) %>%
   group_by(discipline) %>%
   summarise(nstudent = n()) %>%
   mutate(discipline = fct_reorder(discipline, nstudent))
-ggplot(data = df_nostat, aes(x = discipline, y = nstudent)) +
+
+ggplot(data = df_full, aes(x = discipline, y = nstudent)) +
   geom_col() +
   coord_flip()
+
 
 
 library(shiny)
 
 ui <- fluidPage(
-  
+  sidebarLayout(sidebarPanel(
+    selectizeInput("majorchoice",
+                   label = "Choose a Major", choices = levels(factor(df_full$discipline.x)),
+                   selected = "BIOL"),
+      selectizeInput("minorchoice",
+                   label = "Choose a Minor", choices = levels(factor(df_full$discipline.y)),
+                   selected = "CHEM")),
+    mainPanel(plotOutput("barplot"))
+  )
 )
 
 server <- function(input, output, session) {
@@ -240,6 +252,648 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 
 # Could not get the plot to be reactive and scroll through. I added an action button and then got stuck.
+
+```
+
+From class 2/28:
+
+title: "Introduction to `shiny`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## aside: proportions
+
+```{r}
+library(tidyverse)
+plot_df <- tibble(samp_props = seq(from = 0, to = 1, by = 0.001),
+       se = sqrt(samp_props * (1 - samp_props)))
+ggplot(data = plot_df, aes(x = samp_props, y = se)) +
+  geom_line()
+```
+
+```{r}
+library(shiny)
+library(shiny)
+ui <- fluidPage(
+  
+)
+server <- function(input, output, session) {
+  
+}
+shinyApp(ui, server)
+```
+
+```{r}
+library(shiny)
+ui <- fluidPage(
+  selectInput("dataset", label = "Dataset", choices = ls("package:datasets")),
+  verbatimTextOutput("summary"),
+  tableOutput("table")
+)
+server <- function(input, output, session) {
+  # Create a reactive expression
+  dataset <- reactive({
+    get(input$dataset, "package:datasets")
+  })
+  output$summary <- renderPrint({
+    # Use a reactive expression by calling it like a function
+    summary(dataset())
+  })
+  
+  output$table <- renderTable({
+    dataset()
+  })
+}
+shinyApp(ui, server)
+```
+
+```{r}
+library(shiny)
+ui <- fluidPage(
+  textInput("name", "What's your name?"),
+  textOutput("greeting")
+)
+server <- function(input, output, session) {
+  output$greeting <- renderText({
+  paste0("Hello ", input$name)
+})
+  
+}
+shinyApp(ui, server)
+```
+
+Shiny update fix:
+
+
+```{r}
+library(tidyverse)
+atp_df <- read_csv("data/atp_matches_2019.csv")
+wta_df <- read_csv("data/wta_matches_2019.csv")
+both_df <- bind_rows(atp_df, wta_df)
+
+both_long <- both_df %>% pivot_longer(c(winner_name, loser_name))
+
+## only keep players who have player over 50 matches
+both_n50 <- both_long %>% group_by(value) %>% count() %>%
+  filter(n > 50)
+
+## construct various statistics
+major_tennis <- semi_join(both_long, both_n50, by = c("value"))
+major_tennis <- major_tennis %>% mutate(w_svperc = 100 * w_1stIn / w_svpt,
+                                        l_svperc = 100 * l_1stIn / l_svpt,
+                                        w_firstwon = 100 * w_1stWon / w_1stIn,
+                                        l_firstwon = 100 * l_1stWon / l_1stIn,
+                                        w_secondwon = 100 * w_2ndWon / (w_svpt - w_1stIn),
+                                        l_secondwon = 100 * l_2ndWon / (l_svpt - l_1stIn))
+
+major_tennis_w <- major_tennis %>% filter(name == "winner_name")
+major_tennis_l <- major_tennis %>% filter(name == "loser_name")
+
+w_small <- major_tennis_w %>% select(tourney_name, surface, value, winner_seed, w_ace, w_df, w_svperc,
+                                     w_firstwon, w_secondwon) %>%
+  rename(seed = winner_seed, ace = w_ace, df = w_df, svperc = w_svperc,
+         firstwon = w_firstwon, secondwon = w_secondwon) %>%
+  mutate(result = "win")
+
+l_small <- major_tennis_l %>% select(tourney_name, surface, value, loser_seed, l_ace, l_df, l_svperc, l_firstwon, l_secondwon)  %>%
+  rename(seed = loser_seed, ace = l_ace, df = l_df, svperc = l_svperc,
+         firstwon = l_firstwon, secondwon = l_secondwon) %>%
+  mutate(result = "loss")
+
+df <- bind_rows(w_small, l_small) %>%
+  rename(player = "value")
+df
+
+var_choices <- names(df)[c(1, 2, 4:9)]
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"),
+              tableOutput("wintab"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    base_plot <- ggplot(df_sub(), aes(x = .data[[input$varchoice]]))
+    
+    
+    if (is.numeric(df_sub()[[input$varchoice]]) == TRUE) {
+      
+      base_plot + geom_histogram(colour = "black", fill = "white",
+                                 bins = input$binnumber) +
+        theme_minimal(base_size = 22)
+    } else if (is.character(df_sub()[[input$varchoice]])) {
+      base_plot + geom_bar(colour = "black", fill = "white") +
+        theme_minimal(base_size = 22) +
+        coord_flip()
+    }
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+
+  
+  output$wintab <- renderTable({
+    table(df_sub()$result)
+  })
+  
+}
+
+shinyApp(ui, server)
+```
+
+
+
+
+
+
+```{r}
+library(shiny)
+ui <- fluidPage(
+  sliderInput("x", label = "If x is", min = 1, max = 50, value = 30),
+  sliderInput("y", label = "If y is", min = 1, max = 50, value = 30),
+  "then x times 5 is",
+  textOutput("product")
+)
+server <- function(input, output, session) {
+  
+  output$product <- renderText({ 
+    input$x * input$y
+  })
+}
+shinyApp(ui, server)
+```
+
+```{r}
+library(shiny)
+ui <- fluidPage(
+  sliderInput("x", "If x is", min = 1, max = 50, value = 30),
+  sliderInput("y", "and y is", min = 1, max = 50, value = 5),
+  "then, (x * y) is", textOutput("product"),
+  "and, (x * y) + 5 is", textOutput("product_plus5"),
+  "and (x * y) + 10 is", textOutput("product_plus10")
+)
+server <- function(input, output, session) {
+  
+  
+  product <- reactive({
+    input$x * input$y
+  })
+  
+  output$product <- renderText({ 
+    product()
+  })
+  output$product_plus5 <- renderText({ 
+    product() + 5
+  })
+  output$product_plus10 <- renderText({ 
+    product() + 10
+  })
+}
+shinyApp(ui, server)
+```
+
+Rectivity in Shiny 
+
+
+
+```{r}
+library(tidyverse)
+atp_df <- read_csv("data/atp_matches_2019.csv")
+wta_df <- read_csv("data/wta_matches_2019.csv")
+both_df <- bind_rows(atp_df, wta_df)
+
+both_long <- both_df %>% pivot_longer(c(winner_name, loser_name))
+
+## only keep players who have player over 50 matches
+both_n50 <- both_long %>% group_by(value) %>% count() %>%
+  filter(n > 50)
+
+## construct various statistics
+major_tennis <- semi_join(both_long, both_n50, by = c("value"))
+major_tennis <- major_tennis %>% mutate(w_svperc = 100 * w_1stIn / w_svpt,
+                                        l_svperc = 100 * l_1stIn / l_svpt,
+                                        w_firstwon = 100 * w_1stWon / w_1stIn,
+                                        l_firstwon = 100 * l_1stWon / l_1stIn,
+                                        w_secondwon = 100 * w_2ndWon / (w_svpt - w_1stIn),
+                                        l_secondwon = 100 * l_2ndWon / (l_svpt - l_1stIn))
+
+major_tennis_w <- major_tennis %>% filter(name == "winner_name")
+major_tennis_l <- major_tennis %>% filter(name == "loser_name")
+
+w_small <- major_tennis_w %>% select(tourney_name, surface, value, winner_seed, w_ace, w_df, w_svperc,
+                                     w_firstwon, w_secondwon) %>%
+  rename(seed = winner_seed, ace = w_ace, df = w_df, svperc = w_svperc,
+         firstwon = w_firstwon, secondwon = w_secondwon) %>%
+  mutate(result = "win")
+
+l_small <- major_tennis_l %>% select(tourney_name, surface, value, loser_seed, l_ace, l_df, l_svperc, l_firstwon, l_secondwon)  %>%
+  rename(seed = loser_seed, ace = l_ace, df = l_df, svperc = l_svperc,
+         firstwon = l_firstwon, secondwon = l_secondwon) %>%
+  mutate(result = "loss")
+
+df <- bind_rows(w_small, l_small) %>%
+  rename(player = "value")
+df
+
+var_choices <- names(df)[c(1, 2, 4:9)]
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"),
+              tableOutput("wintab"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    base_plot <- ggplot(df_sub(), aes(x = .data[[input$varchoice]]))
+    
+    
+    if (is.numeric(df_sub()[[input$varchoice]]) == TRUE) {
+      
+      base_plot + geom_histogram(colour = "black", fill = "white",
+                     bins = input$binnumber) +
+      theme_minimal(base_size = 22)
+    } else if (is.character(df_sub()[[input$varchoice]])) {
+      base_plot + geom_bar(colour = "black", fill = "white") +
+        theme_minimal(base_size = 22) + # bump up base size so text is legible 
+        coord_flip()
+    }
+  })
+  
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+  
+  output$wintab <- renderTable({
+      table(df_sub()$result)
+  })
+
+}
+
+shinyApp(ui, server)
+
+```
+
+
+
+
+
+
+Final Example 
+
+```{r}
+library(tidyverse)
+library(lubridate)
+weather_df <- read_delim("data/canton_ny_weather_data.txt")
+```
+
+
+
+
+DEBUGGING
+
+
+```{r}
+test_fun <- function(x = 4, y = 3, z = -4) {
+  
+  x2 <- x ^ 2
+  # browser() - using browser() lets you run through code one line at a time and see where the error may be occuring if there is an error. MUST delete or inactivate browser line when you are done using it.
+  y2 <- y ^ 2
+  rootz <- sqrt(z)
+  
+  ssxy <- x2 + y2
+  
+  final <- ssxy / rootz
+  
+  return(final)
+}
+
+test_fun()
+library(tidyverse)
+atp_df <- read_csv("data/atp_matches_2019.csv")
+wta_df <- read_csv("data/wta_matches_2019.csv")
+both_df <- bind_rows(atp_df, wta_df)
+
+both_long <- both_df %>% pivot_longer(c(winner_name, loser_name))
+
+## only keep players who have player over 50 matches
+both_n50 <- both_long %>% group_by(value) %>% count() %>%
+  filter(n > 50)
+
+## construct various statistics
+major_tennis <- semi_join(both_long, both_n50, by = c("value"))
+major_tennis <- major_tennis %>% mutate(w_svperc = 100 * w_1stIn / w_svpt,
+                                        l_svperc = 100 * l_1stIn / l_svpt,
+                                        w_firstwon = 100 * w_1stWon / w_1stIn,
+                                        l_firstwon = 100 * l_1stWon / l_1stIn,
+                                        w_secondwon = 100 * w_2ndWon / (w_svpt - w_1stIn),
+                                        l_secondwon = 100 * l_2ndWon / (l_svpt - l_1stIn))
+
+major_tennis_w <- major_tennis %>% filter(name == "winner_name")
+major_tennis_l <- major_tennis %>% filter(name == "loser_name")
+
+w_small <- major_tennis_w %>% select(tourney_name, surface, value, winner_seed, w_ace, w_df, w_svperc,
+                                     w_firstwon, w_secondwon) %>%
+  rename(seed = winner_seed, ace = w_ace, df = w_df, svperc = w_svperc,
+         firstwon = w_firstwon, secondwon = w_secondwon) %>%
+  mutate(result = "win")
+
+l_small <- major_tennis_l %>% select(tourney_name, surface, value, loser_seed, l_ace, l_df, l_svperc, l_firstwon, l_secondwon)  %>%
+  rename(seed = loser_seed, ace = l_ace, df = l_df, svperc = l_svperc,
+         firstwon = l_firstwon, secondwon = l_secondwon) %>%
+  mutate(result = "loss")
+
+df <- bind_rows(w_small, l_small) %>%
+  rename(player = "value")
+df
+
+var_choices <- names(df)[c(1, 2, 4:9)]
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"),
+              tableOutput("wintab"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  hist_plot <- reactive({
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    base_plot <- ggplot(df_sub(), aes(x = .data[[input$varchoice]]))
+    
+    # browser()
+    if (is.numeric(df_sub()[[input$varchoice]]) == TRUE) {
+      
+      base_plot + geom_histogram(colour = "black", fill = "white",
+                                 bins = input$binnumber) +
+        theme_minimal(base_size = 22)
+    } else if (is.character(df_sub()[[input$varchoice]])) {
+      base_plot + geom_bar(colour = "black", fill = "white") +
+        theme_minimal(base_size = 22) +
+        coord_flip()
+    }
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+
+  
+  output$wintab <- renderTable({
+    table(df_sub()$result)
+  })
+  
+
+  
+}
+
+shinyApp(ui, server)
+
+
+
+
+####################################
+####################################
+## Error 1
+## 
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"),
+              tableOutput("wintab"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+
+  
+  hist_plot <- reactive({
+    
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    base_plot <- ggplot(df_sub(), aes(x = .data[[input$varchoice]]))
+    
+
+    if (is.numeric(df_sub()[[input$varchoice]]) == TRUE) {
+      
+      base_plot + geom_histogram(colour = "black", fill = "white",
+                                 bins = input$binnumber) +
+        theme_minimal(base_size = 22)
+    } else if (is.character(df_sub()[[input$varchoice]])) {
+      base_plot + geom_bar(colour = "black", fill = "white") +
+        theme_minimal(base_size = 22) +
+        coord_flip()
+    }
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+  
+  
+  output$wintab <- renderTable({
+    table(df_sub()$result)
+  })
+  
+  
+  
+}
+
+shinyApp(ui, server)
+
+##############################
+##############################
+  ## Error 2
+  
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("playerchoice",
+                   label = "Choose a Player", choices = levels(factor(df$player)),
+                   selected = "Aryna Sabalenka"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices),
+    sliderInput("binnumber", label = "Choose a Number of Bins", 
+                min = 1, max = 50, value = 15, step = 1)),
+    mainPanel(plotOutput("histgraph"),
+              tableOutput("wintab"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+  df_sub <- reactive({
+    df %>% filter(player == input$playerchoice)
+  })
+  
+  
+  hist_plot <- reactive({
+    
+    browser()
+    
+    # ggplot(df_sub(), aes_string(x = input$varchoice)) +
+    # geom_histogram(colour = "black", fill = "white", bins = 15)
+    base_plot <- ggplot(df_sub(), aes(x = df_sub()[[input$vrchoice]]))
+    
+    
+    if (is.numeric(df_sub()[[input$varchoice]]) == TRUE) {
+      
+      base_plot + geom_histogram(colour = "black", fill = "white",
+                                 bins = input$binnumber) +
+        theme_minimal(base_size = 22)
+    } else if (is.character(df_sub()[[input$varchoice]])) {
+      base_plot + geom_bar(colour = "black", fill = "white") +
+        theme_minimal(base_size = 22) +
+        coord_flip()
+    }
+  })
+  
+  output$histgraph <- renderPlot({
+    hist_plot()
+  })
+  
+  
+  output$wintab <- renderTable({
+    table(df_sub()$result)
+  })
+  
+  
+  
+}
+
+shinyApp(ui, server)
+```
+
+
+# 10.1 exercises
+
+```{r}
+ui <- fluidPage(
+  textInput("name", "What's your name?"),
+  textOutput("greeting")
+)
+
+#Given the following servers, fix the simple errors:
+
+server <- function(input, output, server) {
+  output$greeting <- renderText({paste0("Hello ", input$name)
+    })
+}
+
+shinyApp(ui, server)
+# first one needs to be input$name, not just name, and there need to be squiggle brackets around it so it is reactive. Also, it has to be output$greeting, not input.
+
+server <- function(input, output, server) {
+  greeting <- reactive(paste0("Hello ", input$name))
+  output$greeting <- renderText(greeting())
+}
+
+shinyApp(ui, server)
+# This second one needs greeting when it is called upon to have a () after it, as it is now reactive. Also, need a reactive statement before the paste line. 
+
+server <- function(input, output, server) {
+  output$greeting <- renderText({paste0("Hello ", input$name)
+  })
+}
+
+shinyApp(ui, server)
+
+# third one needs a render text command with reactive brackets and the spelling of greeting to be fixed. Also,needs a space after hello so it puts a space between the words.
+
+# Exercise 2 ; draw the reactive graph for following server functions
+
+server1 <- function(input, output, session) {
+  c <- reactive(input$a + input$b)
+  e <- reactive(c() + input$d)
+  output$f <- renderText(e())
+}
+
+# a -> b -> c -> d -> e -> f
+
+
+server2 <- function(input, output, session) {
+  x <- reactive(input$x1 + input$x2 + input$x3)
+  y <- reactive(input$y1 + input$y2)
+  output$z <- renderText(x() / y())
+}
+
+# x1 -> x2 -> x3 ->z
+# y1 -> y2 ------->z
+
+server3 <- function(input, output, session) {
+  d <- reactive(c() ^ input$d)
+  a <- reactive(input$a * 10)
+  c <- reactive(b() / input$c) 
+  b <- reactive(a() + input$b)
+}
+
+# a -> b + a -> b / c -> c ^ d -> d's output
 
 ```
 
