@@ -1,0 +1,178 @@
+---
+title: "Midterm_inclass"
+author: "Clara Mugnai"
+date: "3/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+“All work presented is my own. I have not communicated with or worked with anyone else on this exam.”
+
+Clara Mugnai
+
+# 1: 
+
+```{r}
+library(tidyverse)
+library(here)
+pokemon_df <- read_csv(here("data/pokemon_full.csv"))
+pokemon_type <- pokemon_df %>% group_by(Type) %>% summarise(type_count = n())
+
+ggplot(data = pokemon_type, aes(x = Type, y = type_count)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Type",
+       y = "Count") +
+  coord_flip()
+```
+
+## a.
+data is specified as pokemon_type
+mappings are specified with the x and the y
+a geom function is specified with geom_bar
+stat is specified with stat = "identity"
+coordinate function is specified with coord_flip
+
+## b. 
+
+In the section on Gestalt Inferences, they discuss proximity and how that affects people's perception of plots. People understand plots better when they can compare things to each other. A person looking at the bar chart the way itis ordered originally will struggle to see where each bar falls compared to the others, but if you order them a viewer can compare to those close by to the one in question and better decide which is larger. 
+
+## c. 
+
+The reading discussed perception and that comes into play when choosing to include 0 or not. In general, we use 0 when doing a bar plot because bars are plotted as "length" and point plots are not. Point plots are simply a dot at the value, while a bar plot is coloring all of the "counts" from zero to that value. The eye percieves that bar as the amount of a thing but the dot is just relevant relative to the other dots. It has to do with what we as people compare a bar to vs. a dot.
+
+# 3:
+
+I learned that there is a lot more to consider as far as ethics than I previously thought. I knew that visualizations had a great impact on how people perceived things and particularly, what the major take away they would get from my work would be. The part I had not considered was what the bigger ramifications of those take aways were. Specifically, the shuttle launch example made me think a lot about being cautious with the conclusions people may be jumping to. I definitely will think more about how someone could possibly perceive a figure I make, rather than how I think they are likely to perceive it. 
+
+# 4:
+
+## a. construct a map that fills each U.S. State with the percent of voters who voted for the republican candidate, Trump (percent_gop). For this problem,
+
+you do not need to worry about including Alaska or Hawaii. They are important but this is a timed exam!
+you should change the colour scale so that it is appropriate for the problem.
+
+```{r}
+library(maps)
+library(tidyverse)
+library(here)
+election_df <- read_csv(here("2020_county_pres.csv")) %>%
+  group_by(state_name) %>%
+  summarise(total_gop = sum(votes_gop),
+            total_dem = sum(votes_dem)) %>%
+  mutate(percent_gop = 100 * total_gop / (total_gop + total_dem)) %>%
+  mutate(state_name = str_to_lower(state_name))
+
+state_df <- ggplot2::map_data("state")
+state_full <- left_join(state_df, election_df, by = c("region" = "state_name"))
+
+ggplot(data = state_full, aes(x = long, y = lat, group = group)) +
+  geom_polygon(colour = "black", aes(fill = percent_gop)) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  theme_void() +
+  scale_fill_fermenter(type = "seq")
+```
+
+## b.
+
+The data frame needed to construct the map has to have the lat and long coordinates for each time a boundary line must be drawn. So every bump or turn has to have its own point. This makes it much longer than just the 50 states. 
+
+# 5: 
+
+Construct a shiny app using the alcohol.csv data set that has a scatterplot of the number of wine servings vs. the number of beer servings. In the app, the user should be able to select a country and have a label for that country appear on the app.
+
+Also: create an input that lets the user choose a variable (either beer_servings, spirit_servings, and wine_servings) and create an output that is a histogram based on that variable.
+
+```{r}
+library(shiny)
+library(tidyverse)
+library(ggrepel)
+library(here)
+alcohol_df <- read_csv(here("data/alcohol.csv"))
+
+onecountry_df <- alcohol_df %>% filter(country == "Australia")
+
+ggplot(alcohol_df, aes(x = beer_servings, y = wine_servings)) +
+  geom_point() +
+  geom_label_repel(data = onecountry_df, aes(label = country)) +
+  geom_point(data = onecountry_df, size = 3, shape = 1)
+```
+
+```{r}
+var_choices <- names(alcohol_df)[c(2,3,4)]
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("countrychoice",
+                   label = "Choose a Country", choices = levels(factor(alcohol_df$country)),
+                   selected = "Australia"),
+    radioButtons("varchoice", label = "Choose a Statistic",
+                 choices = var_choices)),
+    mainPanel(plotOutput("scatterplot"),
+              plotOutput("histogram")),
+  )
+)
+
+server <- function(input, output, session) {
+  
+   onecountry_df <- reactive({alcohol_df %>% filter(country == input$countrychoice)
+   })
+   
+  output$scatterplot <- renderPlot({
+
+ggplot(alcohol_df, aes(x = beer_servings, y = wine_servings)) +
+  geom_point() +
+  geom_label_repel(data = onecountry_df(), aes(label = country)) +
+  geom_point(data = onecountry_df(), size = 3, shape = 1)
+  })
+  
+  output$histogram <- renderPlot({
+    ggplot(alcohol_df, aes(x =.data[[input$varchoice]])) + geom_histogram()
+  })
+}
+
+shinyApp(ui, server)
+```
+
+# 6:
+
+For the following shiny app, draw a reactive graph. I think the easiest way to do this would be to hand-draw the graph and hand it in on a piece of paper (there is paper at the front of the room). If you can figure out a way to draw it on your computer, you may do that and push that file to GitHub.
+
+# 7:
+
+Construct a lollipop chart that shows the 10 WTA tennis players with the highest average number of aces in the 2019 season who have played at least 20 matches.
+#
+
+
+library(tidyverse)
+library(here)
+wta_df <- read_csv(here("data/wta_matches_2019.csv"))
+wta_long <- wta_df %>% pivot_longer(c(winner_name, loser_name),
+                                    names_to = "won_or_lost",
+                                    values_to = "player") %>%
+  select(won_or_lost, player, everything())
+
+wta_small <- wta_long %>% 
+  group_by(player) %>%
+  summarise(matches = sum(n))
+
+wta_long2 <- wta_long %>% 
+  mutate(aces = case_when(won_or_lost == "winner_name" ~ "w_ace",
+                          won_or_lost == "loser_name" ~ "l_ace")) %>%
+  tail()
+
+
+wta_final <- semi_join(wta_long2, wta_small, by = c("player" = "player"))
+
+ggplot(wta_final, aes(x = player, y = winner_ioc)) +
+  geom_point() +
+  geom_segment(aes(x=player, xend=player, y=0, yend=winner_ioc)) + coord_flip() + labs(x = "Player", y = "Number wins")
+
+
+# 8:
+
+## a.
+
+You cannot see the variability with a lollipop chart. You can see the mean number of aces for each player but you can't see where how many matches over 20 they played. It is a problem when you present a summary statistic without properly representing the variability of the summary statistic. 
+
+## b.
