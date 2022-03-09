@@ -1,0 +1,96 @@
+---
+title: "Mini Tutorial 3"
+author: "Clara Mugnai"
+date: "3/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, fig.width=12)
+```
+
+# Expressing Uncertainty
+
+## Description
+
+It is very cool to show summary statistics in plots, like mean proportions of categorical variables, however, we can't forget that those go beyond simply the summary stat. Plots need to also show the variability within those summary statistics, such as standard deviation or proportions of smaller categories within large ones. One effective way of doing this will be explained in this section. We will use the college major data set and the variables major_category, Major, unemployed, and employed. The question we want to answer here is, which major gives the best chance to be employed?
+
+## Incorporating Data Variability in Graphs
+
+The first thing we need to do is read in the data and make the prop_employed and prop_unemployed variables, grouped by the major_categories variable. 
+```{r}
+library(tidyverse)
+college_df <- read_csv("data/college-majors.csv") 
+
+college_df <- college_df %>% 
+  filter(Major != "FOOD SCIENCE") %>%
+  group_by(Major_category) %>%
+  mutate(total_major = sum(Total)) %>%
+  mutate(total_employed = sum(Employed)) %>%
+  mutate(total_unemployed = sum(Unemployed)) %>%
+  mutate(prop_employed = (total_employed/total_major)) %>% 
+  mutate(prop_unemployed = (total_unemployed/total_major)) %>%
+  ungroup() %>%
+  mutate(Major_category = fct_reorder(Major_category, desc(prop_employed)))
+head(college_df)
+```
+
+What we have here is the full data set as well as the proportion of employed and unemployed graduates, grouped by the major_category. We had to create totals for the entire category and then use those totals to find the large scale proportions. Now we can look at how the proportion of employed and unemployed graduates changes across major categories.
+
+```{r}
+ggplot(data = college_df, aes(x = Major_category, y = prop_employed)) +
+  geom_point() + 
+  geom_point(aes(y = prop_unemployed, color = "Proportion Unemployed")) + 
+  scale_color_manual(values= c("Proportion Unemployed" = "Red")) +
+  coord_flip() + 
+  labs(y = "Proportion Employed", x = "Major")
+``` 
+
+This plot if very informative and could answer our research question, loosely. However, it is missing the vital information on how much variation there is in each of these major categories. The Engineering category contains every branch of engineering so it would be helpful to know if the proportion of the whole category is skewed by one major. If you are picking a major where you want to have good employement security, you probably need to know how that major actually compares to the proportion of the entire category.
+
+
+To do this, we will make employment and unemployment rates for each small major within the major category:
+
+```{r}
+college_employed <- college_df %>%
+  group_by(Major_category) %>%  
+  mutate(smallprop_employed = (Employed/Total)) %>% 
+  mutate(smallprop_unemployed = (Unemployed/Total))
+```
+
+Then, we can add these values to the plot with the use of more geom_point() arguments. 
+
+```{r}
+ggplot(data = college_employed, aes(x = Major_category, y = smallprop_employed)) +
+  geom_point() + 
+  geom_point(aes(y = smallprop_unemployed, color = "Proportion Unemployed")) + 
+  scale_color_manual(values= c("Proportion Unemployed" = "Red")) +
+  coord_flip() + 
+  geom_point(aes(y = prop_employed), color = "Forestgreen", size = 2) + 
+  geom_point(aes(y = prop_unemployed), color = "Forestgreen", size = 2) + 
+  labs(y = "Proportion Employed", x = "Major Category")
+```
+
+Notice: We can use the geom_point() argument multiple times to have points of different colors, sizes, and showing the different proportions.
+
+Finally, we will use plotly so that you can scroll over the points and see which major each one corresponds to
+
+```{r}
+library(plotly)
+plot1 <- ggplot(data = college_employed, aes(x = Major_category, y = smallprop_employed, label = Major)) +
+  geom_point() + 
+  geom_point(aes(y = smallprop_unemployed, color = "Proportion Unemployed")) + 
+  scale_color_manual(values= c("Proportion Unemployed" = "Red")) +
+  coord_flip() + 
+  geom_point(aes(y = prop_employed), color = "Forestgreen", size = 2) + 
+  geom_point(aes(y = prop_unemployed), color = "Forestgreen", size = 2) + 
+  labs(y = "Proportion Employed", x = "Major Category")
+ggplotly(plot1, tooltop = "label")
+```
+
+So this last plot is significantly better at answering the research question of: which major gives the best chance for being employed? This plot shows the variety around those major category proportions of employment. You can see here that, while Law and Public Policy has an overall employment propotion that is higher than than of the Arts, the actual points are mostly lower. So for choosing a major, you are more likely to get employed in the majors under the Arts umbrella than in the majors under the Law umbrella. 
+
+Another thing that a plot with variability includes that a plot without it leaves out is the sample size of each group. Looking at the final plot you see that Communications majors seem to produce a high proportion of employment. They have a very similar proportion to Agriculture majors. However, you can also see in this plot that you have a lot more options for specific major choices in Agriculture than you do in Communications. That could weigh into your decision of a major. 
+
+There are many ways to show variability in plots, and some are more critical than others. This is just one way to go about including it. The big idea to remember here is that a large scale summary statistic should not be plotted without some method of showing the variability. It is a very easy way to mislead readers, and do it accidentally, so when making visualizations we have to keep it in mind. 
+

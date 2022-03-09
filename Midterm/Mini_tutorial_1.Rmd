@@ -1,0 +1,93 @@
+---
+title: "Mini Tutorial 1"
+author: "Clara Mugnai"
+date: "3/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+“All work presented is my own. I have not communicated with or worked with anyone else on this exam.”
+
+Clara Mugnai
+
+# Description
+
+In this section we will be covering the seven variables of the grammar of graphics, why and when we should customize them, as well as "bad perception" and "edges, contrast, and colors" from the Data Visualization readings done in class. The main idea of these two topics is that every decision made when constructing data visualizations needs to be made with the viewer in mind. Over-customizing and losing track of what the main idea is can be just as bad as a plain plot. These topics will be explained using the pokemon data set, and specifically the variables of Type, Defense, Legendary, and Weight.
+
+## Grammar of Graphics
+
+A grammar of graphics is basically the 7 parameters that are used by every graphing application to make graphs. They consist of 
+
+- Data 
+- Mappings
+- Geom_functions
+- Stat 
+- Position 
+- Facet_function
+- Coordinate_function 
+
+A graphing package like ggplot2 uses the grammar of graphics parameters but has presets for most of them so that you do not have to specify every single thing. This is really nice so that all the plots look similar and basic things like position and coordinate_function don't change in every plot. An example of a basic plot made in ggplot is here:
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+pokemon_df <- read_csv("data/pokemon_full.csv")
+
+ggplot(data = pokemon_df, aes(x = Defense, y = weight)) + geom_point() + facet_wrap(~Type)
+```
+
+So this plot only specifies the data, mapping (in aes), geom, and facet parameters. The coordinate argument is not used and the position and stat arguments are defaults. This is a plot with specified stat, position, and coordinate arguments.
+
+```{r}
+ggplot(data = pokemon_df, aes(x = Type, fill = Legendary)) + geom_bar(position = "dodge", stat = "count") + coord_flip() 
+```
+
+In this second plot, the data, mapping, geom, coordinate, position, and stat arguments are all changed. It is not faceted, as that doesn't make much sense here but you can see that there is a lot of customization and it is not all necessary. Here is the same plot, with a facet argument:
+
+```{r}
+ggplot(data = pokemon_df, aes(x = Type, fill = Legendary)) + geom_bar(position = "dodge", stat = "count") + coord_flip() + facet_wrap(~Generation)
+```
+
+This plot is to the point where no person wants to study it enough to understand it so the visualization has lost its effectiveness. It is useful to know all the ways you can customize, but it helps to have programs like ggplot2 that determine some things for us so it doesn't get out of hand. 
+
+Now, we will talk about a couple of things to keep in mind so that you can customize to your hearts content without losing the effectiveness for the audience.
+
+## Bad Perception
+
+It is key to remember that, while we enjoy making plots neat and pretty, they need to stay interpretable for the general public. One way to keep track of this is to think about the way something will be perceived. Here is a plot that, while cool, is not interpretable.
+
+```{r}
+ggplot(data = pokemon_df, aes(x = Legendary, fill = Type)) + geom_bar(position = "stack")
+```
+
+So it is really interesting to look at the breakdown of type and legendary, see which types are the most legendary, and which aren't. However, it is actually almost impossible to get any take away from this because there are too many categories and none of them have comparable baselines. So the eye cannot compare the two bars. 
+
+Another example of poorly thinking about perception is shown in these plots of Defense vs. Weight for pokemon
+
+```{r}
+ggplot(data = pokemon_df, aes(x = Defense, y = weight)) + geom_point() + theme(aspect.ratio = 1/3)
+
+ggplot(data = pokemon_df, aes(x = Defense, y = weight)) + geom_point() + theme(aspect.ratio = 12/5)
+
+```
+
+Here, the two plots are actually identical data! They look very different though. One looks like there is a hump in the middle of the data, going up to a peak and then down again, while the second one looks like a very sharp upwards trend. These were made with different aspect ratios, so one is skinny and tall and the other is long and flat. When making plots we have to consider that the person looking at it may not take the time to study the axes and figure out that we were simply stretching one way or the other and not changing anything. 
+
+## Edges, Contrast, and Colors
+
+Finally, a common road to get tempted down is colors and not thinking carefully about what colors to use in our plots. There are three common color scales we use for data visualization: unordered, sequential, and diverging. Examples of the three in action are shown here:
+
+```{r}
+pokemon_df <- pokemon_df %>% filter(Type == "Grass" | Type == "Water" | Type == "Rock" | Type == "Fire" | Type == "Normal")
+ggplot(data = pokemon_df, aes(x = Defense, y = weight, color = Type)) + geom_point() + scale_color_brewer(palette = "Set1")
+ggplot(data = pokemon_df, aes(x = Defense, y = weight, color = Type)) + geom_point() + scale_color_brewer(palette = "Blues")
+ggplot(data = pokemon_df, aes(x = Defense, y = weight, color = Type)) + geom_point() + scale_color_brewer(palette = "RdGy")
+```
+
+In this situation, the color scale that is the best is the first plot, where they are unordered. This is because the data is grouped by things that are unrelated to each other. The colors are only there to seperate, we do not expect them in a specific order. The second plot is using a sequential scale, so getting darker as the types change. This does not make sense here because we are plotting unrelated things, not sequential things. Finally, we have the diverging scale. This scale has a midpoint of white and extreme red and black on either side. This also does not make sense to use here as our types do not have a "midpoint" to mark with the neutral color of white. A situation where we would use this type of scale is weather, maybe freezing is the midpoint and the color gets more blue below freezing and more red above freezing. 
+
+
+

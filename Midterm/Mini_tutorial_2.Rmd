@@ -1,0 +1,87 @@
+---
+title: "Mini Tutorial 2"
+author: "Clara Mugnai"
+date: "3/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+# Mapping
+
+## Description
+
+This section will briefly walk through how to map in R-studio and produce useful images. The dataset being used is just the maps package in r, calling the map_data command. This contains the latitude and longitude, as well as subregions within Italy. With that information we will make a map of Italy, as well as italian cities using the world.cities data frame in r. 
+
+## Walkthrough
+
+
+First, we load the packages and data frames from r.
+```{r}
+library(maps)
+library(tidyverse)
+library(dplyr)
+italy_df <- ggplot2::map_data('world2', 'italy')
+italy_cities <- get('world.cities')
+italy_cities <- italy_cities[italy_cities$country.etc == 'Italy', ]
+```
+
+Then, we will use a ggplot and geom_polygon argument to draw a basic map of the longitude and latitude variables, creating the boundaries for the country map. 
+
+```{r}
+ggplot(data = italy_df,
+            mapping = aes(x = long, y = lat,
+                          group = group)) +
+  geom_polygon()
+```
+
+So this is a map of the basic shape of Italy but it has the longitude and latitude axis, which are probably unnecessary information. There is a very simple way to remove those, using the theme() argument in ggplot.
+
+```{r}
+ggplot(data = italy_df,
+            mapping = aes(x = long, y = lat,
+                          group = group)) +
+  geom_polygon() + theme_void()
+```
+
+Now, we can add to this and make it a lot more interesting. To start, we can fill within the geom_polygon function by subregion so that the smaller subregions are a different color.
+
+```{r}
+ggplot(data = italy_df,
+            mapping = aes(x = long, y = lat,
+                          group = group)) +
+  geom_polygon(aes(fill = subregion)) + theme_void()
+```
+
+The map is looking for informative and fun now. We can now incorporate that data set we made using the cities in a geom_point argument. Just like with any other ggplot item, we can add things in a new data set by speficying the new data set within the argument, outside of the aes() statement. 
+
+```{r}
+ggplot(data = italy_df,
+            mapping = aes(x = long, y = lat,
+                          group = group)) +
+  geom_polygon(aes(fill = subregion)) + geom_point(data = italy_cities, (aes(x = long, y = lat, group = country.etc)), color = "forestgreen") + theme_void()
+```
+
+Now we only have one more thing to think about, and watch out for with maps. That is projections. The way that maps are made involves stretching and rescaling, to show round things that wrap around the world, on a flat scale. There are numerous map projection options in r, a couple of them being: 
+
+
+- mercator()
+- lambert()
+- albers()
+  
+We will use mercator here, as it does not require any other conditions and tends to suffice for a map on a small scale, like an individual country. 
+
+
+```{r}
+ggplot(data = italy_df,
+            mapping = aes(x = long, y = lat,
+                          group = group)) +
+  geom_polygon(aes(fill = subregion)) + geom_point(data = italy_cities, (aes(x = long, y = lat, group = country.etc)), color = "forestgreen") +
+    coord_map (projection = "mercator") + theme_void()
+```
+
+The main correction made with the coord_map projection change is that the scaling of the islands and entire country is corrected. It is not scaled to fill the page anymore, as that made it too wide and stretched for the actual country size.
+
+There are endless possibilities for what we can do with maps and polygons, this is a very brief explanation of a simple map. However, most of these principles are applicable in much more complex projections and with more interesting data. 

@@ -1,0 +1,183 @@
+---
+title: "Mini Tutorial 4"
+author: "Clara Mugnai"
+date: "3/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+# Shiny
+
+## Description
+
+We will cover Shiny in this section. Shiny is a way to create an app that receives user input and changes the display on the screen, based on what that user said. In order to introduce Shiny we also have to introduce Reactivity, as that is how shiny changes the app with the choice changes. The data set used here will be the same as the data set in section 3, so the college majors data set. The variables here will be major category and all four of the proportion employed variables. 
+
+
+## Introduction to Shiny
+
+First, we will read in and mutate the data set from tutorial 3 so that we can use it to make an app.
+  
+```{r}
+library(tidyverse)
+library(shiny)
+college_df <- read_csv("data/college-majors.csv") 
+
+college_df <- college_df %>% 
+  filter(Major != "FOOD SCIENCE") %>%
+  group_by(Major_category) %>%
+  mutate(total_major = sum(Total)) %>%
+  mutate(total_employed = sum(Employed)) %>%
+  mutate(total_unemployed = sum(Unemployed)) %>%
+  mutate(prop_employed = (total_employed/total_major)) %>% 
+  mutate(prop_unemployed = (total_unemployed/total_major)) %>%
+  ungroup() %>%
+  mutate(Major_category = fct_reorder(Major_category, desc(prop_employed)))
+college_employed <- college_df %>%
+  group_by(Major_category) %>%  
+  mutate(smallprop_employed = (Employed/Total)) %>% 
+  mutate(smallprop_unemployed = (Unemployed/Total))
+```
+
+
+To start with explaining shiny, there is a simple structure to each app:
+
+- UI - where you input data and tell shiny what to do with it
+- Server - where you tell shiny what output to use
+- shiny(ui,server) - telling shiny to put the two components into an app
+  
+
+note: There are a lot of customization options within Shiny, the only ones we are using here are sidebarlayout and then specifying the sidebarpanel() vs. the mainpanel() so that the output is a little neater. 
+```{r}
+library(shiny)
+ui <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(),
+    mainPanel()
+  )
+)
+
+server <- function(input, output, session) {
+  
+}
+
+shinyApp(ui, server)
+```
+
+Two important things to note with Shiny are:
+
+- You need to quit out of the app window or hit stop in the console after each time you create a version of the app. The console will run in the app, rather than in r-studio, until you hit this stop button. 
+
+- It is very annoying and difficult to debug Shiny so it is helpful to do everything step-by-step.
+  
+On that note: we are going to add an input option with selectize. This will allow the user to pick a major category, or multiple, so that the plot updates with only what they are interested in. 
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("majorchoice",
+                   label = "Choose a Major Category", choices = levels(factor(college_employed$Major_category)),
+                   selected = "Engineering", multiple = TRUE)),
+    mainPanel()
+  )
+)
+
+server <- function(input, output, session) {
+
+}
+
+shinyApp(ui, server)
+```
+
+Now, we have an app with a successful input. The user can pick as many majorcategories as they want to include on the output. The next step is to add the static plot that we made in tutorial 3 to the server part of the app.
+
+To do this, we add a plotOutput("name of plot") to the main panel in the UI, and we add the plot as a renderplot and name it what we put in plotOutput...
+
+```{r}
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("majorchoice",
+                   label = "Choose a Major Category", choices = levels(factor(college_employed$Major_category)),
+                   selected = "Engineering", multiple = TRUE)),
+    mainPanel(plotOutput("scatterplot"))
+  )
+)
+
+server <- function(input, output, session) {
+   
+  output$scatterplot <- renderPlot({
+ggplot(data = college_employed, aes(x = Major_category, y = smallprop_employed)) +
+  geom_point() + 
+  geom_point(aes(y = smallprop_unemployed, color = "Proportion Unemployed")) + 
+  scale_color_manual(values= c("Proportion Unemployed" = "Red")) +
+  coord_flip() + 
+  geom_point(aes(y = prop_employed), color = "Forestgreen", size = 2) + 
+  geom_point(aes(y = prop_unemployed), color = "Forestgreen", size = 2) + 
+  labs(y = "Proportion Employed", x = "Major Category")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+We have an app! 
+
+All this app does is take input and keep a static graph up on the screen. This is the extent of what we can do without reactivity so....
+
+
+## Introduction to Reactivity
+
+We have a static plot and we have an app that shows the static plot and the input choices we want the user to have. However, they do not connect to each other. The final step we have to take is change the data frame we are using to one that changes based on what the user selects, and make the plot with that data frame. 
+
+To do this we must:
+
+- add a reactive ({}) to the server
+
+- direct it to make a data frame filtered to have the major_category only equal to the majors the user picks (we can do this using the %in% condition, so that it still runs when there are multiple choices)
+
+- change the data set referenced in the static plot to be this new data frame
+
+note: When we are referencing a reactive data frame we have to have () afterwards.
+
+```{r}
+ui <- fluidPage(
+  sidebarLayout(sidebarPanel(
+    selectizeInput("majorchoice",
+                   label = "Choose a Major Category", choices = levels(factor(college_employed$Major_category)),
+                   selected = "Engineering", multiple = TRUE)),
+    mainPanel(plotOutput("scatterplot"))
+  )
+)
+
+server <- function(input, output, session) {
+  
+   college_sub <- reactive({
+    college_employed %>% filter(Major_category %in% input$majorchoice)
+  })
+   
+  output$scatterplot <- renderPlot({
+ggplot(data = college_sub(), aes(x = Major_category, y = smallprop_employed)) +
+  geom_point() + 
+  geom_point(aes(y = smallprop_unemployed, color = "Proportion Unemployed")) + 
+  scale_color_manual(values= c("Proportion Unemployed" = "Red")) +
+  coord_flip() + 
+  geom_point(aes(y = prop_employed), color = "Forestgreen", size = 2) + 
+  geom_point(aes(y = prop_unemployed), color = "Forestgreen", size = 2) + 
+  labs(y = "Proportion Employed", x = "Major Category")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+It works! The app changes based on what the user inputs and it makes a legible, appropriate visualization. 
+
+Reactivity goes way beyond what we see here, and one of the key aspects of it that is not utilized here is that it does not have to run "in order". The app will go out of order to keep creating new plots. So even though we have our data frame specified in the code before the plot, when the user changes the data set by changing the input, shiny will re-read the data and re-make the plot. The main thing we use reactive commands for is to make things change in real time. You can see by the way we worked through these steps that without reactivity, you cannot make a very useful app.
+
+In conclusion, Shiny is a very complex program that can do things well beyond what we did here. However, the general structure and format of the app will remain the same as you add elements and the key things to remember about reactivity, stopping the run, and carefully building apps to avoid bugs and issues will not change. 
+
+A final note, is that shiny should ideally be run in Rscript files, so that it will not simply knit as "unsupported". For this exam I am using a rmarkdown and knitting to an html but it is not the ideal structure for Shiny. 
